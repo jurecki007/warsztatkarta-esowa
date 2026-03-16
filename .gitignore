@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Tauri build output (handled by src-tauri/.gitignore too)
+src-tauri/target/
+
+# Private signing key - NEVER commit this
+.tauri/
+*.key
+*.key.pub
+
+# Local env / editor
+.env
+.env.local
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
