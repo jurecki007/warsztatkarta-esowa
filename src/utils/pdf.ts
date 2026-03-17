@@ -1,7 +1,8 @@
 import jsPDF from 'jspdf'
+import { invoke } from '@tauri-apps/api/core'
 import type { ZlecenieDetail } from './db'
 
-export function generujFakturePDF(d: ZlecenieDetail): void {
+export async function generujFakturePDF(d: ZlecenieDetail): Promise<void> {
   const doc = new jsPDF()
   const margin = 14
   let y = 20
@@ -128,5 +129,8 @@ export function generujFakturePDF(d: ZlecenieDetail): void {
   doc.text('Podpis Mechanika', margin, y + 5)
   doc.text('Podpis Klienta', 115, y + 5)
 
-  doc.save(`zlecenie_${d.zlecenie.id}_${d.klient.nazwisko}.pdf`)
+  const nazwa = `zlecenie_${d.zlecenie.id}_${d.klient.nazwisko}.pdf`
+  const bytes = Array.from(new Uint8Array(doc.output('arraybuffer')))
+  const sciezka = await invoke<string>('zapisz_pdf', { nazwa, dane: bytes })
+  alert(`PDF zapisano: ${sciezka}`)
 }

@@ -149,7 +149,7 @@ export default function KartaZlecenia() {
   const handlePDF = async () => {
     if (!savedId) { setKomunikat('Najpierw zapisz zlecenie.'); return }
     const d = await pobierzZlecenie(savedId)
-    generujFakturePDF(d)
+    await generujFakturePDF(d)
   }
 
   const setRob = (i: number, k: keyof NowaPozycjaRobocizna, v: string | number) =>
@@ -161,6 +161,7 @@ export default function KartaZlecenia() {
   const czyPending = addMut.isPending || editMut.isPending || pozMut.isPending
 
   return (
+    <>
     <div className="space-y-4">
       {/* Pasek akcji */}
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -427,5 +428,6 @@ export default function KartaZlecenia() {
         </div>
       </div>
     )}
+    </>
   )
 }

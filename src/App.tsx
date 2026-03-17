@@ -79,7 +79,7 @@ export default function App() {
           ))}
         </nav>
         <div className="px-5 py-4 text-xs text-blue-400 border-t border-blue-700 space-y-1.5">
-          <div>v0.2.0 · Made by NyxionTech</div>
+          <div>v0.3.0 · Made by NyxionTech</div>
           <div>{renderUpdateButton()}</div>
         </div>
       </aside>

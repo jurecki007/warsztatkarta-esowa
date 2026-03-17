@@ -48,6 +48,7 @@ pub fn run() {
             commands::zapisz_pozycje,
             commands::dodaj_zdjecie,
             commands::usun_zdjecie,
+            commands::zapisz_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("błąd podczas uruchamiania aplikacji");

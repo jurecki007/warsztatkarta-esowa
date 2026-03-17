@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::DbState;
-use tauri::State;
+use tauri::{Manager, State};
 
 type CmdResult<T> = Result<T, String>;
 fn err(e: impl ToString) -> String { e.to_string() }
@@ -274,4 +274,12 @@ pub fn usun_zdjecie(db: State<DbState>, id: i64) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
     conn.execute("DELETE FROM zdjecia WHERE id=?1", [id]).map_err(err)?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn zapisz_pdf(app: tauri::AppHandle, nazwa: String, dane: Vec<u8>) -> CmdResult<String> {
+    let download_dir = app.path().download_dir().map_err(err)?;
+    let path = download_dir.join(&nazwa);
+    std::fs::write(&path, &dane).map_err(err)?;
+    Ok(path.to_string_lossy().into_owned())
 }
