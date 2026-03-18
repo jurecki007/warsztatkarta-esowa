@@ -1,17 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useReactToPrint } from 'react-to-print'
-import { Save, Printer, FileDown, ArrowLeft, Plus, Trash2, UserPlus, CarFront } from 'lucide-react'
+import { Save, Printer, FileDown, ArrowLeft, Plus, Trash2, UserPlus, CarFront, BookOpen, Eye } from 'lucide-react'
 import {
   pobierzKlientow, pobierzPojazdy, pobierzZlecenie,
   dodajZlecenie, aktualizujZlecenie, zapiszPozycje,
   dodajZdjecie, usunZdjecie, dodajKlienta, dodajPojazd,
+  pobierzPresetyRobocizny,
 } from '../utils/db'
-import type { NowaPozycjaRobocizna, NowaPozycjaChesc, Zdjecie, NowyKlient, NowyPojazd } from '../utils/db'
+import type { NowaPozycjaRobocizna, NowaPozycjaChesc, Zdjecie, NowyKlient, NowyPojazd, PresetRobocizny } from '../utils/db'
 import { generujFakturePDF } from '../utils/pdf'
 import { useAppStore } from '../stores'
+import { useToast } from '../stores/useToast'
 import GaleriaZdjec from './GaleriaZdjec'
 import KlientForm from './KlientForm'
+import Combobox from './Combobox'
 
 const pustyPojazd: NowyPojazd = { rejestracja: '', marka: '', model: '', rok: undefined, vin: '' }
 
@@ -28,6 +31,7 @@ const pustaCz  = (): NowaPozycjaChesc      => ({ nazwa: '', ilosc: 1, cena: 0 })
 
 export default function KartaZlecenia() {
   const qc = useQueryClient()
+  const toast = useToast()
   const { aktywneZlecenieId, setWidok } = useAppStore()
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -39,13 +43,15 @@ export default function KartaZlecenia() {
   const [czesci, setCzesci] = useState<NowaPozycjaChesc[]>([pustaCz()])
   const [zdjecia, setZdjecia] = useState<Zdjecie[]>([])
   const [savedId, setSavedId] = useState<number | null>(aktywneZlecenieId)
-  const [komunikat, setKomunikat] = useState('')
   const [modalKlient, setModalKlient] = useState(false)
   const [modalPojazd, setModalPojazd] = useState(false)
+  const [modalPresety, setModalPresety] = useState(false)
+  const [modalPodglad, setModalPodglad] = useState(false)
   const [formPojazd, setFormPojazd] = useState<NowyPojazd>(pustyPojazd)
 
   const { data: klienci = [] } = useQuery({ queryKey: ['klienci'], queryFn: pobierzKlientow })
   const { data: pojazdy = [] } = useQuery({ queryKey: ['pojazdy'], queryFn: pobierzPojazdy })
+  const { data: presety = [] } = useQuery({ queryKey: ['presety_robocizny'], queryFn: pobierzPresetyRobocizny })
   const { data: detail } = useQuery({
     queryKey: ['zlecenie', aktywneZlecenieId],
     queryFn: () => pobierzZlecenie(aktywneZlecenieId!),
@@ -88,6 +94,7 @@ export default function KartaZlecenia() {
       qc.invalidateQueries({ queryKey: ['klienci'] })
       setKlientId(id)
       setModalKlient(false)
+      toast.dodaj('Klient dodany.')
     },
   })
 
@@ -98,6 +105,7 @@ export default function KartaZlecenia() {
       setPojazdId(id)
       setModalPojazd(false)
       setFormPojazd(pustyPojazd)
+      toast.dodaj('Pojazd dodany.')
     },
   })
 
@@ -112,7 +120,7 @@ export default function KartaZlecenia() {
   }
 
   const zapisz = async () => {
-    if (!klientId || !pojazdId) { setKomunikat('Wybierz klienta i pojazd.'); return }
+    if (!klientId || !pojazdId) { toast.dodaj('Wybierz klienta i pojazd.', 'error'); return }
     try {
       let id = savedId
       if (!id) {
@@ -126,10 +134,9 @@ export default function KartaZlecenia() {
       ])
       qc.invalidateQueries({ queryKey: ['zlecenia'] })
       qc.invalidateQueries({ queryKey: ['zlecenie', id] })
-      setKomunikat('Zlecenie zapisane ✓')
-      setTimeout(() => setKomunikat(''), 3000)
+      toast.dodaj('Zlecenie zapisane.')
     } catch (e) {
-      setKomunikat(`Błąd: ${e}`)
+      toast.dodaj(`Błąd: ${e}`, 'error')
     }
   }
 
@@ -147,9 +154,15 @@ export default function KartaZlecenia() {
   const handlePrint = useReactToPrint({ contentRef: printRef })
 
   const handlePDF = async () => {
-    if (!savedId) { setKomunikat('Najpierw zapisz zlecenie.'); return }
+    if (!savedId) { toast.dodaj('Najpierw zapisz zlecenie.', 'error'); return }
     const d = await pobierzZlecenie(savedId)
     await generujFakturePDF(d)
+    toast.dodaj('PDF zapisany w folderze Pobrane.')
+  }
+
+  const dodajPreset = (p: PresetRobocizny) => {
+    setRobocizna(rs => [...rs, { nazwa: p.nazwa, czas_h: 1, stawka: p.stawka }])
+    setModalPresety(false)
   }
 
   const setRob = (i: number, k: keyof NowaPozycjaRobocizna, v: string | number) =>
@@ -160,6 +173,22 @@ export default function KartaZlecenia() {
 
   const czyPending = addMut.isPending || editMut.isPending || pozMut.isPending
 
+  const klientOpcje = klienci.map(k => ({
+    value: k.id,
+    label: `${k.nazwisko} ${k.imie}`,
+    sub: k.firma,
+  }))
+
+  const pojazdOpcje = pojazdy.map(p => ({
+    value: p.id,
+    label: p.rejestracja,
+    sub: `${p.marka} ${p.model}${p.rok ? ' · ' + p.rok : ''}`,
+  }))
+
+  const nrZlecenia = savedId
+    ? `ZL/${new Date().getFullYear()}/${String(savedId).padStart(4, '0')}`
+    : 'Nowe zlecenie'
+
   return (
     <>
     <div className="space-y-4">
@@ -169,18 +198,18 @@ export default function KartaZlecenia() {
           className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition">
           <ArrowLeft size={18} /> Powrót
         </button>
-        <h1 className="text-xl font-bold text-gray-800">
-          {savedId ? `Zlecenie #${savedId}` : 'Nowe zlecenie'}
-        </h1>
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">{nrZlecenia}</h1>
+          {savedId && <p className="text-xs text-gray-400 text-center">ID: #{savedId}</p>}
+        </div>
         <div className="flex gap-2">
-          {komunikat && <span className="text-sm text-green-600 self-center">{komunikat}</span>}
           <button onClick={zapisz} disabled={czyPending}
             className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
             <Save size={16} /> {czyPending ? 'Zapisuję…' : 'Zapisz'}
           </button>
-          <button onClick={() => handlePrint()}
+          <button onClick={() => setModalPodglad(true)}
             className="flex items-center gap-1.5 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition">
-            <Printer size={16} /> Drukuj
+            <Eye size={16} /> Podgląd
           </button>
           <button onClick={handlePDF}
             className="flex items-center gap-1.5 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition">
@@ -200,13 +229,7 @@ export default function KartaZlecenia() {
                 <UserPlus size={13} /> Nowy
               </button>
             </div>
-            <select className="input" value={klientId ?? ''}
-              onChange={e => setKlientId(Number(e.target.value) || null)}>
-              <option value="">— wybierz —</option>
-              {klienci.map(k => (
-                <option key={k.id} value={k.id}>{k.nazwisko} {k.imie}{k.firma ? ' / ' + k.firma : ''}</option>
-              ))}
-            </select>
+            <Combobox options={klientOpcje} value={klientId} onChange={setKlientId} placeholder="— wybierz klienta —" />
           </div>
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center justify-between mb-1">
@@ -216,13 +239,7 @@ export default function KartaZlecenia() {
                 <CarFront size={13} /> Nowy
               </button>
             </div>
-            <select className="input" value={pojazdId ?? ''}
-              onChange={e => setPojazdId(Number(e.target.value) || null)}>
-              <option value="">— wybierz —</option>
-              {pojazdy.map(p => (
-                <option key={p.id} value={p.id}>{p.rejestracja} — {p.marka} {p.model}</option>
-              ))}
-            </select>
+            <Combobox options={pojazdOpcje} value={pojazdId} onChange={setPojazdId} placeholder="— wybierz pojazd —" />
           </div>
           <div className="bg-white rounded-xl border p-4">
             <label className="label">Status</label>
@@ -250,10 +267,18 @@ export default function KartaZlecenia() {
         <div className="bg-white rounded-xl border p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-gray-700">Robocizna</h3>
-            <button onClick={() => setRobocizna(r => [...r, pustaRob()])}
-              className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
-              <Plus size={14} /> Dodaj
-            </button>
+            <div className="flex gap-2">
+              {presety.length > 0 && (
+                <button onClick={() => setModalPresety(true)}
+                  className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+                  <BookOpen size={14} /> Presety
+                </button>
+              )}
+              <button onClick={() => setRobocizna(r => [...r, pustaRob()])}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+                <Plus size={14} /> Dodaj
+              </button>
+            </div>
           </div>
           <table className="w-full text-sm">
             <thead>
@@ -425,6 +450,112 @@ export default function KartaZlecenia() {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    )}
+
+    {/* Modal: presety robocizny */}
+    {modalPresety && (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+          <h2 className="text-lg font-bold mb-4">Presety robocizny</h2>
+          <div className="space-y-1 max-h-72 overflow-y-auto">
+            {presety.map(p => (
+              <button key={p.id} onClick={() => dodajPreset(p)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-blue-50 text-sm transition text-left">
+                <span className="font-medium">{p.nazwa}</span>
+                <span className="text-gray-500">{p.stawka.toFixed(2)} zł/h</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setModalPresety(false)}
+            className="mt-4 w-full bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition text-sm">
+            Zamknij
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Modal: podgląd wydruku */}
+    {modalPodglad && (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-full flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-lg font-bold">Podgląd wydruku</h2>
+            <div className="flex gap-2">
+              <button onClick={() => handlePrint()}
+                className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
+                <Printer size={15} /> Drukuj
+              </button>
+              <button onClick={() => setModalPodglad(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">
+                Zamknij
+              </button>
+            </div>
+          </div>
+          <div className="overflow-y-auto p-6">
+            <div className="border rounded-lg p-6 space-y-4 text-sm">
+              <div className="text-center border-b pb-4">
+                <h1 className="text-xl font-bold">KARTA ZLECENIA</h1>
+                <p className="text-gray-500">{nrZlecenia}</p>
+              </div>
+              {klientId && (() => {
+                const k = klienci.find(x => x.id === klientId)
+                return k ? (
+                  <div>
+                    <p className="font-semibold text-xs text-gray-400 uppercase mb-1">Klient</p>
+                    <p className="font-medium">{k.nazwisko} {k.imie}{k.firma ? ' / ' + k.firma : ''}</p>
+                    {k.telefon && <p className="text-gray-600">Tel: {k.telefon}</p>}
+                    {k.nip && <p className="text-gray-600">NIP: {k.nip}</p>}
+                  </div>
+                ) : null
+              })()}
+              {pojazdId && (() => {
+                const p = pojazdy.find(x => x.id === pojazdId)
+                return p ? (
+                  <div>
+                    <p className="font-semibold text-xs text-gray-400 uppercase mb-1">Pojazd</p>
+                    <p className="font-medium font-mono">{p.rejestracja}</p>
+                    <p className="text-gray-600">{p.marka} {p.model}{p.rok ? ' · ' + p.rok : ''}</p>
+                    {p.vin && <p className="text-gray-600 font-mono text-xs">VIN: {p.vin}</p>}
+                  </div>
+                ) : null
+              })()}
+              {opis && (
+                <div>
+                  <p className="font-semibold text-xs text-gray-400 uppercase mb-1">Opis prac</p>
+                  <p className="text-gray-700">{opis}</p>
+                </div>
+              )}
+              {robocizna.filter(r => r.nazwa.trim()).length > 0 && (
+                <div>
+                  <p className="font-semibold text-xs text-gray-400 uppercase mb-2">Robocizna</p>
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b"><th className="text-left pb-1">Nazwa</th><th className="text-right pb-1">Czas</th><th className="text-right pb-1">Stawka</th><th className="text-right pb-1">Wartość</th></tr></thead>
+                    <tbody>{robocizna.filter(r => r.nazwa.trim()).map((r, i) => (
+                      <tr key={i} className="border-b border-gray-100"><td className="py-1">{r.nazwa}</td><td className="py-1 text-right">{r.czas_h}h</td><td className="py-1 text-right">{r.stawka.toFixed(2)} zł</td><td className="py-1 text-right font-medium">{(r.czas_h * r.stawka).toFixed(2)} zł</td></tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              )}
+              {czesci.filter(c => c.nazwa.trim()).length > 0 && (
+                <div>
+                  <p className="font-semibold text-xs text-gray-400 uppercase mb-2">Części</p>
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b"><th className="text-left pb-1">Nazwa</th><th className="text-right pb-1">Ilość</th><th className="text-right pb-1">Cena</th><th className="text-right pb-1">Wartość</th></tr></thead>
+                    <tbody>{czesci.filter(c => c.nazwa.trim()).map((c, i) => (
+                      <tr key={i} className="border-b border-gray-100"><td className="py-1">{c.nazwa}</td><td className="py-1 text-right">{c.ilosc}</td><td className="py-1 text-right">{c.cena.toFixed(2)} zł</td><td className="py-1 text-right font-medium">{(c.ilosc * c.cena).toFixed(2)} zł</td></tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              )}
+              <div className="border-t pt-3 text-right space-y-1">
+                <p className="text-gray-600">Netto: <span className="font-medium">{sumaNetto.toFixed(2)} zł</span></p>
+                <p className="text-gray-600">VAT 23%: <span className="font-medium">{vat.toFixed(2)} zł</span></p>
+                <p className="text-lg font-bold">Brutto: {sumaBrutto.toFixed(2)} zł</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )}

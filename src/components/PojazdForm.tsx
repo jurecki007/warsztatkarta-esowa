@@ -1,35 +1,46 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, History } from 'lucide-react'
 import { pobierzPojazdy, dodajPojazd, aktualizujPojazd, usunPojazd } from '../utils/db'
 import type { Pojazd, NowyPojazd } from '../utils/db'
+import ConfirmDialog from './ConfirmDialog'
+import HistoriaZlecen from './HistoriaZlecen'
+import { useToast } from '../stores/useToast'
+import { useDebounce } from '../hooks/useDebounce'
 
 const pusty: NowyPojazd = { rejestracja: '', marka: '', model: '', rok: undefined, vin: '' }
 
 export default function PojazdForm() {
   const qc = useQueryClient()
+  const toast = useToast()
   const [szukaj, setSzukaj] = useState('')
+  const szukajDebounced = useDebounce(szukaj, 200)
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState<NowyPojazd>(pusty)
   const [edytowany, setEdytowany] = useState<Pojazd | null>(null)
+  const [doUsuniecia, setDoUsuniecia] = useState<Pojazd | null>(null)
+  const [historia, setHistoria] = useState<Pojazd | null>(null)
 
   const { data: pojazdy = [], isLoading } = useQuery({ queryKey: ['pojazdy'], queryFn: pobierzPojazdy })
 
   const addMut = useMutation({
     mutationFn: dodajPojazd,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pojazdy'] }); setModal(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pojazdy'] }); setModal(false); toast.dodaj('Pojazd dodany.') },
+    onError: () => toast.dodaj('Błąd podczas dodawania pojazdu.', 'error'),
   })
   const editMut = useMutation({
     mutationFn: aktualizujPojazd,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pojazdy'] }); setModal(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pojazdy'] }); setModal(false); toast.dodaj('Pojazd zaktualizowany.') },
+    onError: () => toast.dodaj('Błąd podczas aktualizacji.', 'error'),
   })
   const delMut = useMutation({
     mutationFn: usunPojazd,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['pojazdy'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['pojazdy'] }); toast.dodaj('Pojazd usunięty.') },
+    onError: () => toast.dodaj('Błąd podczas usuwania.', 'error'),
   })
 
   const filtered = pojazdy.filter(p => {
-    const q = szukaj.toLowerCase()
+    const q = szukajDebounced.toLowerCase()
     return !q || p.rejestracja.toLowerCase().includes(q) || p.marka.toLowerCase().includes(q) ||
       p.model.toLowerCase().includes(q)
   })
@@ -43,10 +54,6 @@ export default function PojazdForm() {
       setForm(pusty)
     }
     setModal(true)
-  }
-
-  const usun = (p: Pojazd) => {
-    if (confirm(`Usunąć pojazd ${p.rejestracja}?`)) delMut.mutate(p.id)
   }
 
   const pole = (k: keyof NowyPojazd) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,11 +111,15 @@ export default function PojazdForm() {
                   <td className="px-4 py-2 text-gray-500 text-xs font-mono">{p.vin ?? '—'}</td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex gap-2 justify-end">
+                      <button onClick={() => setHistoria(p)}
+                        className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded transition" title="Historia serwisowa">
+                        <History size={15} />
+                      </button>
                       <button onClick={() => otworz(p)}
                         className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition">
                         <Pencil size={15} />
                       </button>
-                      <button onClick={() => usun(p)}
+                      <button onClick={() => setDoUsuniecia(p)}
                         className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition">
                         <Trash2 size={15} />
                       </button>
@@ -156,6 +167,23 @@ export default function PojazdForm() {
             </form>
           </div>
         </div>
+      )}
+
+      {historia && (
+        <HistoriaZlecen
+          typ="pojazd"
+          id={historia.id}
+          tytul={`${historia.rejestracja} — ${historia.marka} ${historia.model}`}
+          onZamknij={() => setHistoria(null)}
+        />
+      )}
+
+      {doUsuniecia && (
+        <ConfirmDialog
+          tresc={`Usunąć pojazd ${doUsuniecia.rejestracja} (${doUsuniecia.marka} ${doUsuniecia.model})?`}
+          onPotwierdzenie={() => { delMut.mutate(doUsuniecia.id); setDoUsuniecia(null) }}
+          onAnulowanie={() => setDoUsuniecia(null)}
+        />
       )}
     </div>
   )

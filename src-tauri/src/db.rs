@@ -74,6 +74,12 @@ fn migracja(conn: &Connection) -> Result<()> {
             data         TEXT NOT NULL,
             FOREIGN KEY (zlecenie_id) REFERENCES zlecenia(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS presety_robocizny (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa   TEXT NOT NULL,
+            stawka  REAL NOT NULL DEFAULT 0.0
+        );
     ")?;
 
     // Migration: if pojazdy still has klient_id from old schema, recreate without it
@@ -82,6 +88,15 @@ fn migracja(conn: &Connection) -> Result<()> {
         [],
         |r| r.get::<_, i64>(0),
     )? > 0;
+
+    // Migration: add numer_faktury column to zlecenia if missing
+    let has_numer_faktury: bool = conn.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('zlecenia') WHERE name='numer_faktury'",
+        [], |r| r.get::<_, i64>(0),
+    )? > 0;
+    if !has_numer_faktury {
+        conn.execute_batch("ALTER TABLE zlecenia ADD COLUMN numer_faktury TEXT;")?;
+    }
 
     if has_klient_id {
         conn.execute_batch("

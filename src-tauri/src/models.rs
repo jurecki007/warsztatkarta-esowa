@@ -54,6 +54,7 @@ pub struct Zlecenie {
     pub suma_netto: f64,
     pub vat: f64,
     pub suma_brutto: f64,
+    pub numer_faktury: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -73,6 +74,7 @@ pub struct ZlecenieWidok {
     pub suma_netto: f64,
     pub vat: f64,
     pub suma_brutto: f64,
+    pub numer_faktury: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -131,6 +133,19 @@ pub struct Zdjecie {
     pub zlecenie_id: i64,
     pub nazwa: Option<String>,
     pub data: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PresetRobocizny {
+    pub id: i64,
+    pub nazwa: String,
+    pub stawka: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct NowyPresetRobocizny {
+    pub nazwa: String,
+    pub stawka: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

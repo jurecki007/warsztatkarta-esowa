@@ -7,6 +7,7 @@ import PojazdForm from './components/PojazdForm'
 import ZlecenieForm from './components/ZlecenieForm'
 import KartaZlecenia from './components/KartaZlecenia'
 import { useUpdater } from './hooks/useUpdater'
+import Toaster from './components/Toaster'
 
 const NAV: { widok: Widok; label: string; icon: React.ElementType }[] = [
   { widok: 'dashboard', label: 'Pulpit',   icon: LayoutDashboard },
@@ -79,11 +80,12 @@ export default function App() {
           ))}
         </nav>
         <div className="px-5 py-4 text-xs text-blue-400 border-t border-blue-700 space-y-1.5">
-          <div>v0.4.0 · Made by NyxionTech</div>
+          <div>v0.5.0 · Made by NyxionTech</div>
           <div>{renderUpdateButton()}</div>
         </div>
       </aside>
 
+      <Toaster />
       {/* Główna treść */}
       <main className="flex-1 overflow-y-auto p-6">
         {widok === 'dashboard'  && <Dashboard />}

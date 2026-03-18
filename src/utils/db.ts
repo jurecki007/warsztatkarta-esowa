@@ -55,6 +55,7 @@ export interface ZlecenieWidok {
   suma_netto: number
   vat: number
   suma_brutto: number
+  numer_faktury?: string
 }
 
 export interface Zlecenie {
@@ -67,6 +68,18 @@ export interface Zlecenie {
   suma_netto: number
   vat: number
   suma_brutto: number
+  numer_faktury?: string
+}
+
+export interface PresetRobocizny {
+  id: number
+  nazwa: string
+  stawka: number
+}
+
+export interface NowyPresetRobocizny {
+  nazwa: string
+  stawka: number
 }
 
 export interface NoweZlecenie {
@@ -152,6 +165,15 @@ export const zapiszPozycje = (
   robocizna: NowaPozycjaRobocizna[],
   czesci: NowaPozycjaChesc[],
 ) => invoke<void>('zapisz_pozycje', { zlecenieId: zlecenie_id, robocizna, czesci })
+
+// ── Presety robocizny ─────────────────────────────────────────────────────────
+export const pobierzPresetyRobocizny = () => invoke<PresetRobocizny[]>('pobierz_presety_robocizny')
+export const dodajPresetRobocizny = (preset: NowyPresetRobocizny) => invoke<number>('dodaj_preset_robocizny', { preset })
+export const usunPresetRobocizny = (id: number) => invoke<void>('usun_preset_robocizny', { id })
+
+// ── Historia ──────────────────────────────────────────────────────────────────
+export const pobierzZleceniaKlienta = (klientId: number) => invoke<ZlecenieWidok[]>('pobierz_zlecenia_klienta', { klientId })
+export const pobierzZleceniaPojazdu = (pojazdId: number) => invoke<ZlecenieWidok[]>('pobierz_zlecenia_pojazdu', { pojazdId })
 
 // ── Zdjecia ───────────────────────────────────────────────────────────────────
 export const dodajZdjecie = (zlecenie_id: number, nazwa: string | undefined, data: string) =>

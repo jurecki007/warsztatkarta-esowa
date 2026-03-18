@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search, Trash2 } from 'lucide-react'
+import { Plus, Search, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { pobierzZlecenia, usunZlecenie, zmienStatus } from '../utils/db'
 import { useAppStore } from '../stores'
 import { useZlecenia } from '../stores/useZlecenia'
+import ConfirmDialog from './ConfirmDialog'
+import { useToast } from '../stores/useToast'
+import { useDebounce } from '../hooks/useDebounce'
 
 const STATUSY = ['', 'Nowe', 'W trakcie', 'Zakończone', 'Opłacone']
 const KOLOR: Record<string, string> = {
@@ -12,12 +15,17 @@ const KOLOR: Record<string, string> = {
   'Zakończone': 'bg-green-100 text-green-800',
   'Opłacone':   'bg-gray-100 text-gray-700',
 }
+const NA_STRONE = 20
 
 export default function ZlecenieForm() {
   const qc = useQueryClient()
+  const toast = useToast()
   const { setWidok, setAktywneZlecenieId } = useAppStore()
   const { filterStatus, setFilterStatus, szukaj, setSzukaj } = useZlecenia()
+  const szukajDebounced = useDebounce(szukaj, 200)
   const [menuId, setMenuId] = useState<number | null>(null)
+  const [doUsuniecia, setDoUsuniecia] = useState<number | null>(null)
+  const [strona, setStrona] = useState(1)
 
   const { data: zlecenia = [], isLoading } = useQuery({
     queryKey: ['zlecenia'],
@@ -26,7 +34,8 @@ export default function ZlecenieForm() {
 
   const delMut = useMutation({
     mutationFn: usunZlecenie,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['zlecenia'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['zlecenia'] }); toast.dodaj('Zlecenie usunięte.') },
+    onError: () => toast.dodaj('Błąd podczas usuwania.', 'error'),
   })
   const statusMut = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => zmienStatus(id, status),
@@ -34,16 +43,19 @@ export default function ZlecenieForm() {
   })
 
   const filtered = zlecenia.filter(z => {
-    const q = szukaj.toLowerCase()
+    const q = szukajDebounced.toLowerCase()
     const pasuje = !q || z.klient_nazwisko.toLowerCase().includes(q) ||
       z.klient_imie.toLowerCase().includes(q) || z.rejestracja.toLowerCase().includes(q) ||
       String(z.id).includes(q)
     return pasuje && (!filterStatus || z.status === filterStatus)
   })
 
+  const totalStron = Math.max(1, Math.ceil(filtered.length / NA_STRONE))
+  const stranaKorekta = Math.min(strona, totalStron)
+  const widoczne = filtered.slice((stranaKorekta - 1) * NA_STRONE, stranaKorekta * NA_STRONE)
+
   const otworz = (id: number) => { setAktywneZlecenieId(id); setWidok('karta') }
   const noweZlecenie = () => { setAktywneZlecenieId(null); setWidok('karta') }
-  const usun = (id: number) => { if (confirm(`Usunąć zlecenie #${id}?`)) delMut.mutate(id) }
 
   return (
     <div className="space-y-4">
@@ -59,9 +71,9 @@ export default function ZlecenieForm() {
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className="input pl-9" placeholder="Szukaj klienta, rejestracji, nr zlecenia…"
-            value={szukaj} onChange={e => setSzukaj(e.target.value)} />
+            value={szukaj} onChange={e => { setSzukaj(e.target.value); setStrona(1) }} />
         </div>
-        <select className="input w-44" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <select className="input w-44" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setStrona(1) }}>
           {STATUSY.map(s => <option key={s} value={s}>{s || 'Wszystkie statusy'}</option>)}
         </select>
       </div>
@@ -70,6 +82,7 @@ export default function ZlecenieForm() {
         {isLoading ? <p className="p-6 text-center text-gray-400">Ładowanie…</p>
         : filtered.length === 0 ? <p className="p-6 text-center text-gray-400">Brak zleceń.</p>
         : (
+          <>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
@@ -83,7 +96,7 @@ export default function ZlecenieForm() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(z => (
+              {widoczne.map(z => (
                 <tr key={z.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-2 font-mono text-gray-500 cursor-pointer" onClick={() => otworz(z.id)}>#{z.id}</td>
                   <td className="px-4 py-2 font-medium cursor-pointer" onClick={() => otworz(z.id)}>
@@ -113,7 +126,7 @@ export default function ZlecenieForm() {
                     {z.suma_brutto.toFixed(2)} zł
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <button onClick={() => usun(z.id)}
+                    <button onClick={() => setDoUsuniecia(z.id)}
                       className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition">
                       <Trash2 size={14} />
                     </button>
@@ -122,8 +135,32 @@ export default function ZlecenieForm() {
               ))}
             </tbody>
           </table>
+          {totalStron > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t text-sm text-gray-500">
+              <span>{filtered.length} zleceń · strona {stranaKorekta} z {totalStron}</span>
+              <div className="flex gap-1">
+                <button disabled={stranaKorekta === 1} onClick={() => setStrona(s => s - 1)}
+                  className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition">
+                  <ChevronLeft size={16} />
+                </button>
+                <button disabled={stranaKorekta === totalStron} onClick={() => setStrona(s => s + 1)}
+                  className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-30 transition">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
+
+      {doUsuniecia !== null && (
+        <ConfirmDialog
+          tresc={`Usunąć zlecenie #${doUsuniecia}? Tej operacji nie można cofnąć.`}
+          onPotwierdzenie={() => { delMut.mutate(doUsuniecia); setDoUsuniecia(null) }}
+          onAnulowanie={() => setDoUsuniecia(null)}
+        />
+      )}
     </div>
   )
 }

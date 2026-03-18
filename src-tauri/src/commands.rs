@@ -122,7 +122,7 @@ pub fn pobierz_zlecenia(db: State<DbState>) -> CmdResult<Vec<ZlecenieWidok>> {
     let mut stmt = conn.prepare(
         "SELECT z.id, z.klient_id, k.imie, k.nazwisko, k.firma,
                 z.pojazd_id, p.rejestracja, p.marka, p.model,
-                z.opis, z.status, z.data_przyjecia, z.suma_netto, z.vat, z.suma_brutto
+                z.opis, z.status, z.data_przyjecia, z.suma_netto, z.vat, z.suma_brutto, z.numer_faktury
          FROM zlecenia z
          JOIN klienci k ON z.klient_id = k.id
          JOIN pojazdy p ON z.pojazd_id = p.id
@@ -134,7 +134,7 @@ pub fn pobierz_zlecenia(db: State<DbState>) -> CmdResult<Vec<ZlecenieWidok>> {
         pojazd_id: r.get(5)?, rejestracja: r.get(6)?, marka: r.get(7)?,
         model: r.get(8)?, opis: r.get(9)?, status: r.get(10)?,
         data_przyjecia: r.get(11)?, suma_netto: r.get(12)?,
-        vat: r.get(13)?, suma_brutto: r.get(14)?,
+        vat: r.get(13)?, suma_brutto: r.get(14)?, numer_faktury: r.get(15)?,
     })).map_err(err)?;
     Ok(rows.collect::<Result<Vec<_>, _>>().map_err(err)?)
 }
@@ -143,12 +143,13 @@ pub fn pobierz_zlecenia(db: State<DbState>) -> CmdResult<Vec<ZlecenieWidok>> {
 pub fn pobierz_zlecenie(db: State<DbState>, id: i64) -> CmdResult<ZlecenieDetail> {
     let conn = db.0.lock().map_err(err)?;
     let zlecenie = conn.query_row(
-        "SELECT id,klient_id,pojazd_id,opis,status,data_przyjecia,suma_netto,vat,suma_brutto
+        "SELECT id,klient_id,pojazd_id,opis,status,data_przyjecia,suma_netto,vat,suma_brutto,numer_faktury
          FROM zlecenia WHERE id=?1",
         [id], |r| Ok(Zlecenie {
             id: r.get(0)?, klient_id: r.get(1)?, pojazd_id: r.get(2)?,
             opis: r.get(3)?, status: r.get(4)?, data_przyjecia: r.get(5)?,
             suma_netto: r.get(6)?, vat: r.get(7)?, suma_brutto: r.get(8)?,
+            numer_faktury: r.get(9)?,
         })
     ).map_err(err)?;
     let klient = conn.query_row(
@@ -196,7 +197,12 @@ pub fn dodaj_zlecenie(db: State<DbState>, zlecenie: NoweZlecenie) -> CmdResult<i
         "INSERT INTO zlecenia (klient_id,pojazd_id,opis,status) VALUES (?1,?2,?3,?4)",
         rusqlite::params![zlecenie.klient_id, zlecenie.pojazd_id, zlecenie.opis, zlecenie.status],
     ).map_err(err)?;
-    Ok(conn.last_insert_rowid())
+    let id = conn.last_insert_rowid();
+    let rok: i64 = conn.query_row("SELECT CAST(strftime('%Y','now') AS INTEGER)", [], |r| r.get(0)).map_err(err)?;
+    let numer = format!("ZL/{}/{:04}", rok, id);
+    conn.execute("UPDATE zlecenia SET numer_faktury=?1 WHERE id=?2",
+        rusqlite::params![numer, id]).map_err(err)?;
+    Ok(id)
 }
 
 #[tauri::command]
@@ -274,6 +280,81 @@ pub fn usun_zdjecie(db: State<DbState>, id: i64) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
     conn.execute("DELETE FROM zdjecia WHERE id=?1", [id]).map_err(err)?;
     Ok(())
+}
+
+// ── PRESETY ROBOCIZNY ─────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub fn pobierz_presety_robocizny(db: State<DbState>) -> CmdResult<Vec<PresetRobocizny>> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut stmt = conn.prepare("SELECT id,nazwa,stawka FROM presety_robocizny ORDER BY nazwa").map_err(err)?;
+    let rows = stmt.query_map([], |r| Ok(PresetRobocizny {
+        id: r.get(0)?, nazwa: r.get(1)?, stawka: r.get(2)?,
+    })).map_err(err)?;
+    Ok(rows.collect::<Result<Vec<_>, _>>().map_err(err)?)
+}
+
+#[tauri::command]
+pub fn dodaj_preset_robocizny(db: State<DbState>, preset: NowyPresetRobocizny) -> CmdResult<i64> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("INSERT INTO presety_robocizny (nazwa,stawka) VALUES (?1,?2)",
+        rusqlite::params![preset.nazwa, preset.stawka]).map_err(err)?;
+    Ok(conn.last_insert_rowid())
+}
+
+#[tauri::command]
+pub fn usun_preset_robocizny(db: State<DbState>, id: i64) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("DELETE FROM presety_robocizny WHERE id=?1", [id]).map_err(err)?;
+    Ok(())
+}
+
+// ── HISTORIA ──────────────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub fn pobierz_zlecenia_klienta(db: State<DbState>, klient_id: i64) -> CmdResult<Vec<ZlecenieWidok>> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut stmt = conn.prepare(
+        "SELECT z.id, z.klient_id, k.imie, k.nazwisko, k.firma,
+                z.pojazd_id, p.rejestracja, p.marka, p.model,
+                z.opis, z.status, z.data_przyjecia, z.suma_netto, z.vat, z.suma_brutto, z.numer_faktury
+         FROM zlecenia z
+         JOIN klienci k ON z.klient_id = k.id
+         JOIN pojazdy p ON z.pojazd_id = p.id
+         WHERE z.klient_id=?1 ORDER BY z.id DESC"
+    ).map_err(err)?;
+    let rows = stmt.query_map([klient_id], |r| Ok(ZlecenieWidok {
+        id: r.get(0)?, klient_id: r.get(1)?, klient_imie: r.get(2)?,
+        klient_nazwisko: r.get(3)?, klient_firma: r.get(4)?,
+        pojazd_id: r.get(5)?, rejestracja: r.get(6)?, marka: r.get(7)?,
+        model: r.get(8)?, opis: r.get(9)?, status: r.get(10)?,
+        data_przyjecia: r.get(11)?, suma_netto: r.get(12)?,
+        vat: r.get(13)?, suma_brutto: r.get(14)?, numer_faktury: r.get(15)?,
+    })).map_err(err)?;
+    Ok(rows.collect::<Result<Vec<_>, _>>().map_err(err)?)
+}
+
+#[tauri::command]
+pub fn pobierz_zlecenia_pojazdu(db: State<DbState>, pojazd_id: i64) -> CmdResult<Vec<ZlecenieWidok>> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut stmt = conn.prepare(
+        "SELECT z.id, z.klient_id, k.imie, k.nazwisko, k.firma,
+                z.pojazd_id, p.rejestracja, p.marka, p.model,
+                z.opis, z.status, z.data_przyjecia, z.suma_netto, z.vat, z.suma_brutto, z.numer_faktury
+         FROM zlecenia z
+         JOIN klienci k ON z.klient_id = k.id
+         JOIN pojazdy p ON z.pojazd_id = p.id
+         WHERE z.pojazd_id=?1 ORDER BY z.id DESC"
+    ).map_err(err)?;
+    let rows = stmt.query_map([pojazd_id], |r| Ok(ZlecenieWidok {
+        id: r.get(0)?, klient_id: r.get(1)?, klient_imie: r.get(2)?,
+        klient_nazwisko: r.get(3)?, klient_firma: r.get(4)?,
+        pojazd_id: r.get(5)?, rejestracja: r.get(6)?, marka: r.get(7)?,
+        model: r.get(8)?, opis: r.get(9)?, status: r.get(10)?,
+        data_przyjecia: r.get(11)?, suma_netto: r.get(12)?,
+        vat: r.get(13)?, suma_brutto: r.get(14)?, numer_faktury: r.get(15)?,
+    })).map_err(err)?;
+    Ok(rows.collect::<Result<Vec<_>, _>>().map_err(err)?)
 }
 
 #[tauri::command]

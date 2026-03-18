@@ -1,15 +1,23 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, History } from 'lucide-react'
 import { pobierzKlientow, dodajKlienta, aktualizujKlienta, usunKlienta } from '../utils/db'
 import type { Klient } from '../utils/db'
 import KlientForm from './KlientForm'
+import ConfirmDialog from './ConfirmDialog'
+import HistoriaZlecen from './HistoriaZlecen'
+import { useToast } from '../stores/useToast'
+import { useDebounce } from '../hooks/useDebounce'
 
 export default function KlientLista() {
   const qc = useQueryClient()
+  const toast = useToast()
   const [szukaj, setSzukaj] = useState('')
+  const szukajDebounced = useDebounce(szukaj, 200)
   const [modal, setModal] = useState(false)
   const [edytowany, setEdytowany] = useState<Klient | null>(null)
+  const [doUsuniecia, setDoUsuniecia] = useState<Klient | null>(null)
+  const [historia, setHistoria] = useState<Klient | null>(null)
 
   const { data: klienci = [], isLoading } = useQuery({
     queryKey: ['klienci'],
@@ -18,28 +26,27 @@ export default function KlientLista() {
 
   const addMut = useMutation({
     mutationFn: dodajKlienta,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['klienci'] }); setModal(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['klienci'] }); setModal(false); toast.dodaj('Klient dodany.') },
+    onError: () => toast.dodaj('Błąd podczas dodawania klienta.', 'error'),
   })
   const editMut = useMutation({
     mutationFn: aktualizujKlienta,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['klienci'] }); setModal(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['klienci'] }); setModal(false); toast.dodaj('Klient zaktualizowany.') },
+    onError: () => toast.dodaj('Błąd podczas aktualizacji.', 'error'),
   })
   const delMut = useMutation({
     mutationFn: usunKlienta,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['klienci'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['klienci'] }); toast.dodaj('Klient usunięty.') },
+    onError: () => toast.dodaj('Błąd podczas usuwania.', 'error'),
   })
 
   const filtered = klienci.filter(k => {
-    const q = szukaj.toLowerCase()
+    const q = szukajDebounced.toLowerCase()
     return !q || k.imie.toLowerCase().includes(q) || k.nazwisko.toLowerCase().includes(q) ||
       (k.firma ?? '').toLowerCase().includes(q) || k.telefon.includes(q)
   })
 
   const otworz = (k?: Klient) => { setEdytowany(k ?? null); setModal(true) }
-  const usun = (k: Klient) => {
-    if (confirm(`Usunąć klienta ${k.imie} ${k.nazwisko}? Zostaną usunięte też jego pojazdy.`))
-      delMut.mutate(k.id)
-  }
 
   return (
     <div className="space-y-4">
@@ -85,11 +92,15 @@ export default function KlientLista() {
                   <td className="px-4 py-2 text-gray-500 max-w-xs truncate">{k.adres ?? '—'}</td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex gap-2 justify-end">
+                      <button onClick={() => setHistoria(k)}
+                        className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded transition" title="Historia zleceń">
+                        <History size={15} />
+                      </button>
                       <button onClick={() => otworz(k)}
                         className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition">
                         <Pencil size={15} />
                       </button>
-                      <button onClick={() => usun(k)}
+                      <button onClick={() => setDoUsuniecia(k)}
                         className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition">
                         <Trash2 size={15} />
                       </button>
@@ -117,6 +128,23 @@ export default function KlientLista() {
             />
           </div>
         </div>
+      )}
+
+      {historia && (
+        <HistoriaZlecen
+          typ="klient"
+          id={historia.id}
+          tytul={`${historia.imie} ${historia.nazwisko}${historia.firma ? ' / ' + historia.firma : ''}`}
+          onZamknij={() => setHistoria(null)}
+        />
+      )}
+
+      {doUsuniecia && (
+        <ConfirmDialog
+          tresc={`Usunąć klienta ${doUsuniecia.imie} ${doUsuniecia.nazwisko}? Zostaną usunięte też jego zlecenia.`}
+          onPotwierdzenie={() => { delMut.mutate(doUsuniecia.id); setDoUsuniecia(null) }}
+          onAnulowanie={() => setDoUsuniecia(null)}
+        />
       )}
     </div>
   )

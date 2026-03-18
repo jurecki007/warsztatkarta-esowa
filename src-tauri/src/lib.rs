@@ -49,6 +49,11 @@ pub fn run() {
             commands::dodaj_zdjecie,
             commands::usun_zdjecie,
             commands::zapisz_pdf,
+            commands::pobierz_presety_robocizny,
+            commands::dodaj_preset_robocizny,
+            commands::usun_preset_robocizny,
+            commands::pobierz_zlecenia_klienta,
+            commands::pobierz_zlecenia_pojazdu,
         ])
         .run(tauri::generate_context!())
         .expect("błąd podczas uruchamiania aplikacji");
