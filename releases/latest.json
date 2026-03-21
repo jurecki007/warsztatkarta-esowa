@@ -1,11 +1,11 @@
 {
-  "version": "0.5.0",
-  "pub_date": "2026-03-18T00:00:00Z",
-  "notes": "Toasty, potwierdzenia usunięcia, wyszukiwalne dropdowny, debounce, paginacja, historia klienta/pojazdu, presety robocizny, numeracja faktur, podgląd wydruku",
+  "version": "0.5.1",
+  "pub_date": "2026-03-19T00:00:00Z",
+  "notes": "Wsparcie polskich znaków w generowanych PDF",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMTl5cnhFcXBwWmZaUm9weUZqSHh1NFB2N3lvTVpSc1B2M3RuRWV2L0IveGRQQ0haZkVOUHd5Ny9xRFJ2Z1N0Y1V2SkdDeVBQRVJ3UDBIVCs5V0kyRUdlOWNOSGtmQUE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczODUwMzc0CWZpbGU6Tnl4U2Vyd2lzXzAuNS4wX3g2NC1zZXR1cC5leGUKUkVBU3loazFOQ2h3R3p3Mll2SUEraFdDczc5OEgwSFEyUGJ5QmRsS0NnbnhKcTV1dFhUK1dkZHg1UDRSc1JuaVZrdjZxSk1JcWlubU9MeitWUzBxQ1E9PQo=",
-      "url": "https://github.com/jurecki007/warsztatkarta-esowa/releases/download/v0.5.0/NyxSerwis_0.5.0_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTMTl5cnhFcXBwWmJjTHdDWGdqQTNuMGtSaExyL2RmM081OEJ0d3g4QW1pbC85ZGhyM3pVSUx5MFM2N3FqOHpzUFEwNnpoVVR6emI1cEZDbllTWG83dVQwa2toeHZad3c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczOTM0NTUyCWZpbGU6Tnl4U2Vyd2lzXzAuNS4xX3g2NC1zZXR1cC5leGUKWkJ4cE51bzNEOTYvemtMdEpJWGVuUk04TTIwaXF0ODBxL1lkUkFSbDg2ZDJ3dENraXlxZmsvMHlxUU9LM2c3bEhnOEdRSVBNOWIrRnVqQVI0NEw3QWc9PQo=",
+      "url": "https://github.com/jurecki007/warsztatkarta-esowa/releases/download/v0.5.1/NyxSerwis_0.5.1_x64-setup.exe"
     }
   }
 }
