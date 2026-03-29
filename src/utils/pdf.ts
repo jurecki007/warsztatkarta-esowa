@@ -19,7 +19,7 @@ async function loadFont(): Promise<string> {
   return fontB64Cache
 }
 
-export async function generujFakturePDF(d: ZlecenieDetail): Promise<void> {
+export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
   const doc = new jsPDF()
   const b64 = await loadFont()
   doc.addFileToVFS('Roboto-Regular.ttf', b64)
@@ -148,6 +148,5 @@ export async function generujFakturePDF(d: ZlecenieDetail): Promise<void> {
 
   const nazwa = `zlecenie_${d.zlecenie.id}_${d.klient.nazwisko}.pdf`
   const bytes = Array.from(new Uint8Array(doc.output('arraybuffer')))
-  const sciezka = await invoke<string>('zapisz_pdf', { nazwa, dane: bytes })
-  alert(`PDF zapisano: ${sciezka}`)
+  return await invoke<string>('zapisz_pdf', { nazwa, dane: bytes })
 }

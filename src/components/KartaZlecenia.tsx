@@ -155,9 +155,13 @@ export default function KartaZlecenia() {
 
   const handlePDF = async () => {
     if (!savedId) { toast.dodaj('Najpierw zapisz zlecenie.', 'error'); return }
-    const d = await pobierzZlecenie(savedId)
-    await generujFakturePDF(d)
-    toast.dodaj('PDF zapisany w folderze Pobrane.')
+    try {
+      const d = await pobierzZlecenie(savedId)
+      const sciezka = await generujFakturePDF(d)
+      toast.dodaj(`PDF zapisany: ${sciezka}`)
+    } catch (e) {
+      toast.dodaj(`Błąd PDF: ${e}`, 'error')
+    }
   }
 
   const dodajPreset = (p: PresetRobocizny) => {
