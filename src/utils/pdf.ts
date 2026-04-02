@@ -136,7 +136,9 @@ export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
   doc.text('Podpis Mechanika', margin, y + 5)
   doc.text('Podpis Klienta', 115, y + 5)
 
-  const nazwa = `zlecenie_${d.zlecenie.id}_${d.klient.nazwisko}.pdf`
-  const bytes = Array.from(new Uint8Array(doc.output('arraybuffer')))
+  const nazwisko = d.klient.nazwisko.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+  const nazwa = `zlecenie_${d.zlecenie.id}_${nazwisko}.pdf`
+  const buf = doc.output('arraybuffer') as ArrayBuffer
+  const bytes = Array.from(new Uint8Array(buf))
   return await invoke<string>('zapisz_pdf', { nazwa, dane: bytes })
 }

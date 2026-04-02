@@ -359,8 +359,10 @@ pub fn pobierz_zlecenia_pojazdu(db: State<DbState>, pojazd_id: i64) -> CmdResult
 
 #[tauri::command]
 pub fn zapisz_pdf(app: tauri::AppHandle, nazwa: String, dane: Vec<u8>) -> CmdResult<String> {
-    let download_dir = app.path().download_dir().map_err(err)?;
-    let path = download_dir.join(&nazwa);
+    let dir = app.path().download_dir()
+        .or_else(|_| app.path().document_dir())
+        .map_err(err)?;
+    let path = dir.join(&nazwa);
     std::fs::write(&path, &dane).map_err(err)?;
     Ok(path.to_string_lossy().into_owned())
 }

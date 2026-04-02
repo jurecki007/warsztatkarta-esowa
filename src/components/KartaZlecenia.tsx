@@ -33,7 +33,7 @@ export default function KartaZlecenia() {
   const qc = useQueryClient()
   const toast = useToast()
   const { aktywneZlecenieId, setWidok } = useAppStore()
-  const printRef = useRef<HTMLDivElement>(null)
+  const podgladRef = useRef<HTMLDivElement>(null)
 
   const [klientId, setKlientId] = useState<number | null>(null)
   const [pojazdId, setPojazdId] = useState<number | null>(null)
@@ -151,7 +151,7 @@ export default function KartaZlecenia() {
     setZdjecia(z => z.filter(x => x.id !== id))
   }
 
-  const handlePrint = useReactToPrint({ contentRef: printRef })
+  const handlePrintPodglad = useReactToPrint({ contentRef: podgladRef })
 
   const handlePDF = async () => {
     if (!savedId) { toast.dodaj('Najpierw zapisz zlecenie.', 'error'); return }
@@ -222,7 +222,7 @@ export default function KartaZlecenia() {
         </div>
       </div>
 
-      <div ref={printRef} className="space-y-4 print:p-4">
+      <div className="space-y-4">
         {/* Klient + Pojazd + Status */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border p-4">
@@ -487,7 +487,7 @@ export default function KartaZlecenia() {
           <div className="flex items-center justify-between p-4 border-b">
             <h2 className="text-lg font-bold">Podgląd wydruku</h2>
             <div className="flex gap-2">
-              <button onClick={() => handlePrint()}
+              <button onClick={() => handlePrintPodglad()}
                 className="flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
                 <Printer size={15} /> Drukuj
               </button>
@@ -498,7 +498,7 @@ export default function KartaZlecenia() {
             </div>
           </div>
           <div className="overflow-y-auto overflow-x-hidden p-6">
-            <div className="border rounded-lg p-6 space-y-4 text-sm">
+            <div ref={podgladRef} className="border rounded-lg p-6 space-y-4 text-sm">
               <div className="text-center border-b pb-4">
                 <h1 className="text-xl font-bold">KARTA ZLECENIA</h1>
                 <p className="text-gray-500">{nrZlecenia}</p>

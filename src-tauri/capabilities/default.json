@@ -9,8 +9,6 @@
     "core:default",
     "updater:default",
     "process:default",
-    "core:path:default",
-    "core:fs:allow-write-file",
-    "core:fs:allow-read-file"
+    "core:path:default"
   ]
 }
