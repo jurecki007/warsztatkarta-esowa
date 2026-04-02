@@ -1,6 +1,6 @@
 [package]
 name = "warsztatkarta"
-version = "0.5.1"
+version = "0.5.2"
 description = "NyxSerwis - panel serwisowy by NyxionTech"
 authors = []
 license = ""

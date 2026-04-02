@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "NyxSerwis",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "identifier": "com.nyxiontech.nyxserwis",
   "build": {
     "frontendDist": "../dist",
@@ -27,6 +27,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -38,7 +39,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY1NjlBQTEyRjEyQUY3QjUKUldTMTl5cnhFcXBwWmU1RENGeUhyMWlMVzlMSGYwMXphUGVpbWlLclhJSnl4cUtNWGZoelJSZVAK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY4N0E0QTA0MjAxNjU3MkYKUldRdlZ4WWdCRXA2K0twYTZOL0JUS3UyU3R3Rmh2dllWdjdJbkxnMm5qSkFmNkRUNmFFMFJFSS8K",
       "endpoints": [
         "https://raw.githubusercontent.com/jurecki007/warsztatkarta-esowa/main/releases/latest.json"
       ]
