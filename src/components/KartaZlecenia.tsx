@@ -262,7 +262,7 @@ export default function KartaZlecenia() {
         {/* Opis */}
         <div className="bg-white rounded-xl border p-4">
           <label className="label">Opis usterki / wykonanych prac</label>
-          <textarea className="input mt-1 h-20 resize-none break-words overflow-x-hidden" value={opis}
+          <textarea className="input mt-1 h-20 resize-none break-all overflow-x-hidden" value={opis}
             onChange={e => setOpis(e.target.value)}
             placeholder="Opisz usterkę lub zakres prac…" />
         </div>
@@ -497,7 +497,7 @@ export default function KartaZlecenia() {
               </button>
             </div>
           </div>
-          <div className="overflow-y-auto p-6">
+          <div className="overflow-y-auto overflow-x-hidden p-6">
             <div className="border rounded-lg p-6 space-y-4 text-sm">
               <div className="text-center border-b pb-4">
                 <h1 className="text-xl font-bold">KARTA ZLECENIA</h1>
@@ -528,7 +528,7 @@ export default function KartaZlecenia() {
               {opis && (
                 <div>
                   <p className="font-semibold text-xs text-gray-400 uppercase mb-1">Opis prac</p>
-                  <p className="text-gray-700 whitespace-pre-wrap break-words">{opis}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap break-all">{opis}</p>
                 </div>
               )}
               {robocizna.filter(r => r.nazwa.trim()).length > 0 && (

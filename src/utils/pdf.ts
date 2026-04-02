@@ -2,6 +2,19 @@ import jsPDF from 'jspdf'
 import { invoke } from '@tauri-apps/api/core'
 import type { ZlecenieDetail } from './db'
 
+function pl(s: string): string {
+  return s
+    .replace(/[ąĄ]/g, a => a === 'ą' ? 'a' : 'A')
+    .replace(/[ćĆ]/g, a => a === 'ć' ? 'c' : 'C')
+    .replace(/[ęĘ]/g, a => a === 'ę' ? 'e' : 'E')
+    .replace(/[łŁ]/g, a => a === 'ł' ? 'l' : 'L')
+    .replace(/[ńŃ]/g, a => a === 'ń' ? 'n' : 'N')
+    .replace(/[óÓ]/g, a => a === 'ó' ? 'o' : 'O')
+    .replace(/[śŚ]/g, a => a === 'ś' ? 's' : 'S')
+    .replace(/[źŹ]/g, a => a === 'ź' ? 'z' : 'Z')
+    .replace(/[żŻ]/g, a => a === 'ż' ? 'z' : 'Z')
+}
+
 export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
   const doc = new jsPDF()
   doc.setFont('helvetica')
@@ -10,7 +23,7 @@ export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
   let y = 20
 
   const line = (text: string, x = margin) => {
-    doc.text(text, x, y)
+    doc.text(pl(text), x, y)
     y += 7
   }
   const hline = () => {
@@ -55,7 +68,7 @@ export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
     doc.setFont('helvetica', 'normal')
     line('OPIS USTERKI / PRAC')
     doc.setFont('helvetica', 'normal')
-    const lines = doc.splitTextToSize(d.zlecenie.opis, 182)
+    const lines = doc.splitTextToSize(pl(d.zlecenie.opis), 182)
     doc.text(lines, margin, y)
     y += lines.length * 7 + 2
     hline()
@@ -68,14 +81,14 @@ export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
     doc.text('Nazwa', margin, y)
     doc.text('Czas [h]', 110, y)
     doc.text('Stawka', 140, y)
-    doc.text('Wartość', 170, y)
+    doc.text('Wartosc', 170, y)
     y += 5
     for (const p of d.robocizna) {
       const val = (p.czas_h * p.stawka).toFixed(2)
-      doc.text(p.nazwa, margin, y)
+      doc.text(pl(p.nazwa), margin, y)
       doc.text(String(p.czas_h), 110, y)
-      doc.text(`${p.stawka.toFixed(2)} zł`, 140, y)
-      doc.text(`${val} zł`, 170, y)
+      doc.text(`${p.stawka.toFixed(2)} zl`, 140, y)
+      doc.text(`${val} zl`, 170, y)
       y += 6
     }
     y += 2
@@ -87,16 +100,16 @@ export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
     doc.setFont('helvetica', 'normal')
     line('CZĘŚCI')
     doc.text('Nazwa', margin, y)
-    doc.text('Ilość', 110, y)
+    doc.text('Ilosc', 110, y)
     doc.text('Cena', 140, y)
-    doc.text('Wartość', 170, y)
+    doc.text('Wartosc', 170, y)
     y += 5
     for (const p of d.czesci) {
       const val = (p.ilosc * p.cena).toFixed(2)
-      doc.text(p.nazwa, margin, y)
+      doc.text(pl(p.nazwa), margin, y)
       doc.text(String(p.ilosc), 110, y)
-      doc.text(`${p.cena.toFixed(2)} zł`, 140, y)
-      doc.text(`${val} zł`, 170, y)
+      doc.text(`${p.cena.toFixed(2)} zl`, 140, y)
+      doc.text(`${val} zl`, 170, y)
       y += 6
     }
     y += 2
@@ -105,15 +118,15 @@ export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {
 
   // Podsumowanie
   doc.setFont('helvetica', 'normal')
-  doc.text(`Netto:   ${d.zlecenie.suma_netto.toFixed(2)} zł`, 140, y); y += 7
-  doc.text(`VAT 23%: ${d.zlecenie.vat.toFixed(2)} zł`, 140, y); y += 7
+  doc.text(`Netto:   ${d.zlecenie.suma_netto.toFixed(2)} zl`, 140, y); y += 7
+  doc.text(`VAT 23%: ${d.zlecenie.vat.toFixed(2)} zl`, 140, y); y += 7
   doc.setFontSize(13)
-  doc.text(`BRUTTO:  ${d.zlecenie.suma_brutto.toFixed(2)} zł`, 140, y); y += 10
+  doc.text(`BRUTTO:  ${d.zlecenie.suma_brutto.toFixed(2)} zl`, 140, y); y += 10
 
   // Status
   doc.setFontSize(11)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Status: ${d.zlecenie.status}`, margin, y)
+  doc.text(`Status: ${pl(d.zlecenie.status)}`, margin, y)
   y += 10
 
   // Podpisy
