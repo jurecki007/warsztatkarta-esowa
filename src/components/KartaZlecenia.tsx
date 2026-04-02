@@ -528,7 +528,7 @@ export default function KartaZlecenia() {
               {opis && (
                 <div>
                   <p className="font-semibold text-xs text-gray-400 uppercase mb-1">Opis prac</p>
-                  <p className="text-gray-700">{opis}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap break-words">{opis}</p>
                 </div>
               )}
               {robocizna.filter(r => r.nazwa.trim()).length > 0 && (
