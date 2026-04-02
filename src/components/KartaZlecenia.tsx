@@ -262,7 +262,7 @@ export default function KartaZlecenia() {
         {/* Opis */}
         <div className="bg-white rounded-xl border p-4">
           <label className="label">Opis usterki / wykonanych prac</label>
-          <textarea className="input mt-1 h-20 resize-none" value={opis}
+          <textarea className="input mt-1 h-20 resize-none break-words overflow-x-hidden" value={opis}
             onChange={e => setOpis(e.target.value)}
             placeholder="Opisz usterkę lub zakres prac…" />
         </div>
