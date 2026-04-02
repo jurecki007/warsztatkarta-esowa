@@ -4,7 +4,7 @@
   "notes": "Poprawki PDF i obsługa błędów aktualizatora",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdlZ4WWdCRXA2K0ZPdmNvN0tDL0ZyWVE2VTllWTkzeXI3UHQ0WGhtcVkvWkdGWEZkZmEveTFhNzdPNUF6VVBjRlo5NzFsN1RseTNIM3NYaGVObE01NTRaQXdHc1FzNVFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc1MTY4Njk0CWZpbGU6Tnl4U2Vyd2lzXzAuNS4yX3g2NC1zZXR1cC5leGUKajYvYUNkTzlITno1YkZCaDAxZ2FvY2lLMVdoazdtSlJESXZ1Y3QzckZ1MGFJU0lkMFFFdjMrQjZxVjM4bUpsWEphL2t4bFBhTVYrajZtc3lZeXphQUE9PQo=",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRdlZ4WWdCRXA2K0FBdm5WNFVCVkZISzBndjh0SDYzblluOG5vbTlHaW4xZ2NObXN6QXRnaWFXbzFLbm9TUlQ5bDg1OS9xTU00RnVyL0g5UDI0b2tSbWxPaFhSNEVuc0FVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc1MTY5MzA3CWZpbGU6Tnl4U2Vyd2lzXzAuNS4yX3g2NC1zZXR1cC5leGUKc3dxSWxxVk04RjlXRHZoWmZRZStlVU1tWUFJWnNqbXBGUGkrSE9hcnRZaElaNFJ5cnFnTzM3Z2JwTnVHQVR4R0VBQmNIYVhSMVVZdjJ0MGJQYWlCQlE9PQo=",
       "url": "https://github.com/jurecki007/warsztatkarta-esowa/releases/download/v0.5.2/NyxSerwis_0.5.2_x64-setup.exe"
     }
   }
