@@ -2,17 +2,13 @@ import jsPDF from 'jspdf'
 import { invoke } from '@tauri-apps/api/core'
 import type { ZlecenieDetail } from './db'
 
+// jsPDF helvetica only supports ASCII. Strip all non-ASCII safely.
 function pl(s: string): string {
   return s
-    .replace(/[ąĄ]/g, a => a === 'ą' ? 'a' : 'A')
-    .replace(/[ćĆ]/g, a => a === 'ć' ? 'c' : 'C')
-    .replace(/[ęĘ]/g, a => a === 'ę' ? 'e' : 'E')
-    .replace(/[łŁ]/g, a => a === 'ł' ? 'l' : 'L')
-    .replace(/[ńŃ]/g, a => a === 'ń' ? 'n' : 'N')
-    .replace(/[óÓ]/g, a => a === 'ó' ? 'o' : 'O')
-    .replace(/[śŚ]/g, a => a === 'ś' ? 's' : 'S')
-    .replace(/[źŹ]/g, a => a === 'ź' ? 'z' : 'Z')
-    .replace(/[żŻ]/g, a => a === 'ż' ? 'z' : 'Z')
+    .replace(/[łŁ]/g, m => m === 'ł' ? 'l' : 'L') // ł doesn't decompose with NFD
+    .normalize('NFD')                                 // decompose ą→a+ogonek, etc.
+    .replace(/[\u0300-\u036f]/g, '')                  // strip combining diacritics
+    .replace(/[^\x00-\x7F]/g, '')                     // drop any remaining non-ASCII
 }
 
 export async function generujFakturePDF(d: ZlecenieDetail): Promise<string> {

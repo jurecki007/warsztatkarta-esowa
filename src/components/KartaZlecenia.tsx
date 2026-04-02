@@ -262,7 +262,7 @@ export default function KartaZlecenia() {
         {/* Opis */}
         <div className="bg-white rounded-xl border p-4">
           <label className="label">Opis usterki / wykonanych prac</label>
-          <textarea className="input mt-1 h-20 resize-none break-all overflow-x-hidden" value={opis}
+          <textarea className="input mt-1 h-20 resize-none [word-break:break-all] [overflow-wrap:anywhere] overflow-x-hidden" value={opis}
             onChange={e => setOpis(e.target.value)}
             placeholder="Opisz usterkę lub zakres prac…" />
         </div>
@@ -528,16 +528,16 @@ export default function KartaZlecenia() {
               {opis && (
                 <div>
                   <p className="font-semibold text-xs text-gray-400 uppercase mb-1">Opis prac</p>
-                  <p className="text-gray-700 whitespace-pre-wrap break-all">{opis}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap [word-break:break-all] [overflow-wrap:anywhere]">{opis}</p>
                 </div>
               )}
               {robocizna.filter(r => r.nazwa.trim()).length > 0 && (
                 <div>
                   <p className="font-semibold text-xs text-gray-400 uppercase mb-2">Robocizna</p>
-                  <table className="w-full text-xs">
-                    <thead><tr className="border-b"><th className="text-left pb-1">Nazwa</th><th className="text-right pb-1">Czas</th><th className="text-right pb-1">Stawka</th><th className="text-right pb-1">Wartość</th></tr></thead>
+                  <table className="w-full text-xs table-fixed">
+                    <thead><tr className="border-b"><th className="text-left pb-1">Nazwa</th><th className="text-right pb-1 w-16">Czas</th><th className="text-right pb-1 w-20">Stawka</th><th className="text-right pb-1 w-20">Wartość</th></tr></thead>
                     <tbody>{robocizna.filter(r => r.nazwa.trim()).map((r, i) => (
-                      <tr key={i} className="border-b border-gray-100"><td className="py-1">{r.nazwa}</td><td className="py-1 text-right">{r.czas_h}h</td><td className="py-1 text-right">{r.stawka.toFixed(2)} zł</td><td className="py-1 text-right font-medium">{(r.czas_h * r.stawka).toFixed(2)} zł</td></tr>
+                      <tr key={i} className="border-b border-gray-100"><td className="py-1 break-all">{r.nazwa}</td><td className="py-1 text-right">{r.czas_h}h</td><td className="py-1 text-right">{r.stawka.toFixed(2)} zł</td><td className="py-1 text-right font-medium">{(r.czas_h * r.stawka).toFixed(2)} zł</td></tr>
                     ))}</tbody>
                   </table>
                 </div>
@@ -545,10 +545,10 @@ export default function KartaZlecenia() {
               {czesci.filter(c => c.nazwa.trim()).length > 0 && (
                 <div>
                   <p className="font-semibold text-xs text-gray-400 uppercase mb-2">Części</p>
-                  <table className="w-full text-xs">
-                    <thead><tr className="border-b"><th className="text-left pb-1">Nazwa</th><th className="text-right pb-1">Ilość</th><th className="text-right pb-1">Cena</th><th className="text-right pb-1">Wartość</th></tr></thead>
+                  <table className="w-full text-xs table-fixed">
+                    <thead><tr className="border-b"><th className="text-left pb-1">Nazwa</th><th className="text-right pb-1 w-16">Ilość</th><th className="text-right pb-1 w-20">Cena</th><th className="text-right pb-1 w-20">Wartość</th></tr></thead>
                     <tbody>{czesci.filter(c => c.nazwa.trim()).map((c, i) => (
-                      <tr key={i} className="border-b border-gray-100"><td className="py-1">{c.nazwa}</td><td className="py-1 text-right">{c.ilosc}</td><td className="py-1 text-right">{c.cena.toFixed(2)} zł</td><td className="py-1 text-right font-medium">{(c.ilosc * c.cena).toFixed(2)} zł</td></tr>
+                      <tr key={i} className="border-b border-gray-100"><td className="py-1 break-all">{c.nazwa}</td><td className="py-1 text-right">{c.ilosc}</td><td className="py-1 text-right">{c.cena.toFixed(2)} zł</td><td className="py-1 text-right font-medium">{(c.ilosc * c.cena).toFixed(2)} zł</td></tr>
                     ))}</tbody>
                   </table>
                 </div>
